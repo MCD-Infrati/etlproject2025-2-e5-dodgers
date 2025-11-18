@@ -1,0 +1,61 @@
+{
+	"name": "dataflow2GUS",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_AmesProperty_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "source1GUS"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          PID as string,",
+				"          {Lot Frontage} as string,",
+				"          {Lot Area} as string,",
+				"          Street as string,",
+				"          Alley as string,",
+				"          {Lot Shape} as string,",
+				"          {Land Contour} as string,",
+				"          Utilities as string,",
+				"          {Lot Config} as string,",
+				"          {Land Slope} as string,",
+				"          Neighborhood as string,",
+				"          {Condition 1} as string,",
+				"          {Condition 2} as string,",
+				"          {Bldg Type} as string,",
+				"          {House Style} as string,",
+				"          {Overall Qual} as string,",
+				"          {Overall Cond} as string,",
+				"          {Year Built} as string,",
+				"          {Year Remod/Add} as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1GUS",
+				"source1GUS derive({Year Remod/Add} = replace({Year Remod/Add},',,','')) ~> derivedColumn1",
+				"derivedColumn1 sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> sink1"
+			]
+		}
+	}
+}

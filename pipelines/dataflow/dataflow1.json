@@ -1,0 +1,81 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "NeonConn",
+						"type": "LinkedServiceReference"
+					},
+					"name": "tabla1"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          PID as long,",
+				"          MSSubClass as long,",
+				"          MSZoning as string,",
+				"          RoofStyle as string,",
+				"          RoofMatl as string,",
+				"          Exterior1st as string,",
+				"          Exterior2nd as string,",
+				"          MasVnrType as string,",
+				"          MasVnrArea as long,",
+				"          ExterQual as string,",
+				"          ExterCond as string,",
+				"          Foundation as string,",
+				"          Heating as string,",
+				"          HeatingQC as string,",
+				"          CentralAir as boolean,",
+				"          Electrical as string,",
+				"          {1stFlrSF} as long,",
+				"          {2ndFlrSF} as long,",
+				"          LowQualFinSF as long,",
+				"          GrLivArea as long,",
+				"          FullBath as decimal(38,18),",
+				"          HalfBath as decimal(38,18),",
+				"          Bedroom as decimal(38,18),",
+				"          Kitchen as long,",
+				"          KitchenQual as string,",
+				"          TotRmsAbvGrd as long,",
+				"          Functional as string,",
+				"          Fireplaces as long,",
+				"          FireplaceQu as string,",
+				"          PavedDrive as string,",
+				"          WoodDeckSF as long,",
+				"          OpenPorchSF as long,",
+				"          EnclosedPorch as long,",
+				"          {3SsnPorch} as long,",
+				"          ScreenPorch as long,",
+				"          Fence as string,",
+				"          MoSold as decimal(38,18),",
+				"          YrSold as decimal(38,18),",
+				"          SaleType as string,",
+				"          SaleCondition as string,",
+				"          SalePrice as long",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'query',",
+				"     query: 'SELECT\\n    -- Identificador de la propiedad\\n    am.\"pid\"                               AS \"PID\",\\n\\n    -- Clases y zonificación\\n    am.\"MS SubClass\"                       AS \"MSSubClass\",\\n    mz.\"code\"                              AS \"MSZoning\",\\n\\n    -- Techo y exteriores\\n    am.\"Roof Style\"                        AS \"RoofStyle\",\\n    am.\"Roof Matl\"                         AS \"RoofMatl\",\\n    am.\"Exterior 1st\"                      AS \"Exterior1st\",\\n    am.\"Exterior 2nd\"                      AS \"Exterior2nd\",\\n    am.\"Mas Vnr Type\"                      AS \"MasVnrType\",\\n    am.\"Mas Vnr Area\"                      AS \"MasVnrArea\",\\n\\n    -- Calidades/condiciones normalizadas\\n    tq_exterqual.\"code\"                    AS \"ExterQual\",\\n    tq_extercond.\"code\"                    AS \"ExterCond\",\\n\\n    -- Fundación y heating\\n    am.\"foundation\"                        AS \"Foundation\",\\n    am.\"heating\"                           AS \"Heating\",\\n    tq_heatingqc.\"code\"                    AS \"HeatingQC\",\\n\\n    -- Otros servicios\\n    am.\"Central Air\"                       AS \"CentralAir\",\\n    am.\"electrical\"                        AS \"Electrical\",\\n\\n    -- Áreas de piso\\n    am.\"1st Flr SF\"                        AS \"1stFlrSF\",\\n    am.\"2nd Flr SF\"                        AS \"2ndFlrSF\",\\n    am.\"Low Qual Fin SF\"                   AS \"LowQualFinSF\",\\n\\n    -- Área habitable total (suma de 3 campos)\\n    COALESCE(am.\"1st Flr SF\", 0)\\n      + COALESCE(am.\"2nd Flr SF\", 0)\\n      + COALESCE(am.\"Low Qual Fin SF\", 0)  AS \"GrLivArea\",\\n\\n    -- Agregados por PID desde floordetail\\n    COALESCE(fd.\"FullBath\", 0)             AS \"FullBath\",\\n    COALESCE(fd.\"HalfBath\", 0)             AS \"HalfBath\",\\n    COALESCE(fd.\"Bedroom\", 0)              AS \"Bedroom\",\\n\\n    -- Cocina\\n    am.\"Kitchen AbvGr\"                     AS \"Kitchen\",\\n    tq_kitchenqual.\"code\"                  AS \"KitchenQual\",\\n\\n    -- Habitaciones sobre grado\\n    am.\"TotRms AbvGrd\"                     AS \"TotRmsAbvGrd\",\\n    am.\"functional\"                        AS \"Functional\",\\n\\n    -- Chimeneas\\n    am.\"fireplaces\"                        AS \"Fireplaces\",\\n    am.\"Fireplace Qu\"                      AS \"FireplaceQu\",\\n\\n    -- Exterior / amenidades\\n    am.\"Paved Drive\"                       AS \"PavedDrive\",\\n    am.\"Wood Deck SF\"                      AS \"WoodDeckSF\",\\n    am.\"Open Porch SF\"                     AS \"OpenPorchSF\",\\n    am.\"Enclosed Porch\"                    AS \"EnclosedPorch\",\\n    am.\"3Ssn Porch\"                        AS \"3SsnPorch\",\\n    am.\"Screen Porch\"                      AS \"ScreenPorch\",\\n    am.\"fence\"                             AS \"Fence\",\\n\\n    -- Datos de venta\\n    EXTRACT(MONTH FROM sp.\"Sale Date\")     AS \"MoSold\",\\n    EXTRACT(YEAR  FROM sp.\"Sale Date\")     AS \"YrSold\",\\n    sp.\"Sale Type\"                         AS \"SaleType\",\\n    sp.\"Sale Condition\"                    AS \"SaleCondition\",\\n    sp.\"saleprice\"                         AS \"SalePrice\"\\n\\nFROM public.\"amesdbtemp\" am\\n\\n-- Agregados por PID desde floordetail\\nLEFT JOIN (\\n    SELECT\\n        \"pid\",\\n        SUM(\"Full Bath\") AS \"FullBath\",\\n        SUM(\"Half Bath\") AS \"HalfBath\",\\n        SUM(bedrooms)    AS \"Bedroom\"\\n    FROM public.\"floordetail\"\\n    GROUP BY \"pid\"\\n) fd\\n    ON am.\"pid\" = fd.\"pid\"\\n\\n-- Datos de venta\\nLEFT JOIN public.\"saleproperty\" sp\\n    ON am.\"pid\" = sp.\"pid\"\\n\\n-- Zoning: amesdbtemp tiene un ID, mszoning devuelve el code\\nLEFT JOIN public.\"mszoning\" mz\\n    ON am.\"MS Zoning\" = mz.\"id\"\\n\\n-- Calidades (typequality) - se usa la misma tabla con distintos alias\\nLEFT JOIN public.\"typequality\" tq_exterqual\\n    ON am.\"Exter Qual\" = tq_exterqual.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_extercond\\n    ON am.\"Exter Cond\" = tq_extercond.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_heatingqc\\n    ON am.\"Heating QC\" = tq_heatingqc.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_kitchenqual\\n    ON am.\"Kitchen Qual\" = tq_kitchenqual.\"id\"\\n',",
+				"     store: 'postgres',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> tabla1",
+				"tabla1 sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1) ~> sink1"
+			]
+		}
+	}
+}

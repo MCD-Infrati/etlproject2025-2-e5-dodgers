@@ -1,0 +1,52 @@
+{
+	"name": "Jsonmisc",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDataLakeStorageXX",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "Jsonmisc.json",
+				"folderPath": "mongo_in",
+				"fileSystem": "preliminarcontainer"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"_id": {
+					"type": "object",
+					"properties": {
+						"$oid": {
+							"type": "string"
+						}
+					}
+				},
+				"PID": {
+					"type": "object",
+					"properties": {
+						"$numberLong": {
+							"type": "string"
+						}
+					}
+				},
+				"Pool Area": {
+					"type": "object",
+					"properties": {
+						"$numberLong": {
+							"type": "string"
+						}
+					}
+				},
+				"Pool QC": {
+					"type": "string"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

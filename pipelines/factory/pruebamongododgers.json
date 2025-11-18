@@ -1,0 +1,9 @@
+{
+	"name": "pruebamongododgers",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "fdd0a4e2-0ec6-4e37-bfc7-ec63f2a920fa",
+		"tenantId": "e994072b-523e-4bfe-86e2-442c5e10b244"
+	}
+}
