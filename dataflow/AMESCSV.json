@@ -1,0 +1,109 @@
+{
+	"name": "AMESCSV",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorageXX",
+						"type": "LinkedServiceReference"
+					},
+					"name": "AmesCSV"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "AmesDBCSV",
+						"type": "DatasetReference"
+					},
+					"name": "salidatames"
+				}
+			],
+			"transformations": [
+				{
+					"name": "Elimanarcomacoma"
+				},
+				{
+					"name": "Seleccion"
+				},
+				{
+					"name": "imputacionAMESCSV"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          PID as integer,",
+				"          {Lot Frontage} as integer,",
+				"          {Lot Area} as integer,",
+				"          Street as string,",
+				"          Alley as string,",
+				"          {Lot Shape} as string,",
+				"          {Land Contour} as string,",
+				"          Utilities as string,",
+				"          {Lot Config} as string,",
+				"          {Land Slope} as string,",
+				"          Neighborhood as string,",
+				"          {Condition 1} as string,",
+				"          {Condition 2} as string,",
+				"          {Bldg Type} as string,",
+				"          {House Style} as string,",
+				"          {Overall Qual} as integer,",
+				"          {Overall Cond} as integer,",
+				"          {Year Built} as integer,",
+				"          {Year Remod/Add,,} as string",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'landing-zone-csv',",
+				"     fileName: 'AmesProperty.csv',",
+				"     columnDelimiter: ';',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> AmesCSV",
+				"AmesCSV derive({Year RemodAdd} = toInteger(iif((replace({Year Remod/Add,,}, ',', '')==''),toString({Year Built}),replace({Year Remod/Add,,},',','')))) ~> Elimanarcomacoma",
+				"Elimanarcomacoma select(mapColumn(",
+				"          PID,",
+				"          {Lot Frontage},",
+				"          {Lot Area},",
+				"          Street,",
+				"          Alley,",
+				"          {Lot Shape},",
+				"          {Land Contour},",
+				"          Utilities,",
+				"          {Lot Config},",
+				"          {Land Slope},",
+				"          Neighborhood,",
+				"          {Condition 1},",
+				"          {Condition 2},",
+				"          {Bldg Type},",
+				"          {House Style},",
+				"          {Overall Qual},",
+				"          {Overall Cond},",
+				"          {Year Built},",
+				"          {Year Remod/Add} = {Year RemodAdd}",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> Seleccion",
+				"Seleccion derive(each(match(type=='integer'||type=='long'||type=='decimal'||type=='double'), $$ = iif(     isNull($$) || isNan($$),     0,     $$ )),",
+				"          each(match(type=='string'), $$ = iif(     isNull($$) || $$ == '',     'NA',     $$ ))) ~> imputacionAMESCSV",
+				"imputacionAMESCSV sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          {PID;Lot Frontage;Lot Area;Street;Alley;Lot Shape;Land Contour;Utilities;Lot Config;Land Slope;Neighborhood;Condition 1;Condition 2;Bldg Type;House Style;Overall Qual;Overall Cond;Year Built;Year Remod/Add} as string,",
+				"          Prop_1 as string",
+				"     ),",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 1) ~> salidatames"
+			]
+		}
+	}
+}

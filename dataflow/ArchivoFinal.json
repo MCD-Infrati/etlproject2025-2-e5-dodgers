@@ -1,0 +1,274 @@
+{
+	"name": "ArchivoFinal",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "NeonConn",
+						"type": "LinkedServiceReference"
+					},
+					"name": "tabla1"
+				},
+				{
+					"dataset": {
+						"referenceName": "AmesDBCSV",
+						"type": "DatasetReference"
+					},
+					"name": "traerAmes"
+				},
+				{
+					"dataset": {
+						"referenceName": "bsmt",
+						"type": "DatasetReference"
+					},
+					"name": "traerBSMT"
+				},
+				{
+					"dataset": {
+						"referenceName": "misc",
+						"type": "DatasetReference"
+					},
+					"name": "traerMisc"
+				},
+				{
+					"dataset": {
+						"referenceName": "garage",
+						"type": "DatasetReference"
+					},
+					"name": "traerGarage"
+				},
+				{
+					"dataset": {
+						"referenceName": "pool",
+						"type": "DatasetReference"
+					},
+					"name": "traerPool"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "resultado",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "cast1"
+				},
+				{
+					"name": "UnirCSVconBD"
+				},
+				{
+					"name": "changePIDToInteger"
+				},
+				{
+					"name": "eliminarPIDDuplicado"
+				},
+				{
+					"name": "UnirConBSTM"
+				},
+				{
+					"name": "EliminateDuplicates"
+				},
+				{
+					"name": "cast2"
+				},
+				{
+					"name": "UnirConGaraje"
+				},
+				{
+					"name": "UnirConPool"
+				},
+				{
+					"name": "UnirConMisc"
+				},
+				{
+					"name": "ReplaceNullsAndNan"
+				},
+				{
+					"name": "NormalizeColumns"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          PID as long,",
+				"          MSSubClass as long,",
+				"          MSZoning as string,",
+				"          RoofStyle as string,",
+				"          RoofMatl as string,",
+				"          Exterior1st as string,",
+				"          Exterior2nd as string,",
+				"          MasVnrType as string,",
+				"          MasVnrArea as long,",
+				"          ExterQual as string,",
+				"          ExterCond as string,",
+				"          Foundation as string,",
+				"          Heating as string,",
+				"          HeatingQC as string,",
+				"          CentralAir as boolean,",
+				"          Electrical as string,",
+				"          {1stFlrSF} as long,",
+				"          {2ndFlrSF} as long,",
+				"          LowQualFinSF as long,",
+				"          GrLivArea as long,",
+				"          FullBath as decimal(38,18),",
+				"          HalfBath as decimal(38,18),",
+				"          Bedroom as decimal(38,18),",
+				"          Kitchen as long,",
+				"          KitchenQual as string,",
+				"          TotRmsAbvGrd as long,",
+				"          Functional as string,",
+				"          Fireplaces as long,",
+				"          FireplaceQu as string,",
+				"          PavedDrive as string,",
+				"          WoodDeckSF as long,",
+				"          OpenPorchSF as long,",
+				"          EnclosedPorch as long,",
+				"          {3SsnPorch} as long,",
+				"          ScreenPorch as long,",
+				"          Fence as string,",
+				"          MoSold as decimal(38,18),",
+				"          YrSold as decimal(38,18),",
+				"          SaleType as string,",
+				"          SaleCondition as string,",
+				"          SalePrice as long",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'query',",
+				"     query: 'SELECT\\n    -- Identificador de la propiedad\\n    am.\"pid\"                               AS \"PID\",\\n\\n    -- Clases y zonificación\\n    am.\"MS SubClass\"                       AS \"MSSubClass\",\\n    mz.\"code\"                              AS \"MSZoning\",\\n\\n    -- Techo y exteriores\\n    am.\"Roof Style\"                        AS \"RoofStyle\",\\n    am.\"Roof Matl\"                         AS \"RoofMatl\",\\n    am.\"Exterior 1st\"                      AS \"Exterior1st\",\\n    am.\"Exterior 2nd\"                      AS \"Exterior2nd\",\\n    am.\"Mas Vnr Type\"                      AS \"MasVnrType\",\\n    am.\"Mas Vnr Area\"                      AS \"MasVnrArea\",\\n\\n    -- Calidades/condiciones normalizadas\\n    tq_exterqual.\"code\"                    AS \"ExterQual\",\\n    tq_extercond.\"code\"                    AS \"ExterCond\",\\n\\n    -- Fundación y heating\\n    am.\"foundation\"                        AS \"Foundation\",\\n    am.\"heating\"                           AS \"Heating\",\\n    tq_heatingqc.\"code\"                    AS \"HeatingQC\",\\n\\n    -- Otros servicios\\n    am.\"Central Air\"                       AS \"CentralAir\",\\n    am.\"electrical\"                        AS \"Electrical\",\\n\\n    -- Áreas de piso\\n    am.\"1st Flr SF\"                        AS \"1stFlrSF\",\\n    am.\"2nd Flr SF\"                        AS \"2ndFlrSF\",\\n    am.\"Low Qual Fin SF\"                   AS \"LowQualFinSF\",\\n\\n    -- Área habitable total (suma de 3 campos)\\n    COALESCE(am.\"1st Flr SF\", 0)\\n      + COALESCE(am.\"2nd Flr SF\", 0)\\n      + COALESCE(am.\"Low Qual Fin SF\", 0)  AS \"GrLivArea\",\\n\\n    -- Agregados por PID desde floordetail (enteros)\\n    COALESCE(fd.\"FullBath\", 0)             AS \"FullBath\",\\n    COALESCE(fd.\"HalfBath\", 0)             AS \"HalfBath\",\\n    COALESCE(fd.\"Bedroom\", 0)              AS \"Bedroom\",\\n\\n    -- Cocina\\n    am.\"Kitchen AbvGr\"                     AS \"Kitchen\",\\n    tq_kitchenqual.\"code\"                  AS \"KitchenQual\",\\n\\n    -- Habitaciones sobre grado\\n    am.\"TotRms AbvGrd\"                     AS \"TotRmsAbvGrd\",\\n    am.\"functional\"                        AS \"Functional\",\\n\\n    -- Chimeneas\\n    am.\"fireplaces\"                        AS \"Fireplaces\",\\n    am.\"Fireplace Qu\"                      AS \"FireplaceQu\",\\n\\n    -- Exterior / amenidades\\n    am.\"Paved Drive\"                       AS \"PavedDrive\",\\n    am.\"Wood Deck SF\"                      AS \"WoodDeckSF\",\\n    am.\"Open Porch SF\"                     AS \"OpenPorchSF\",\\n    am.\"Enclosed Porch\"                    AS \"EnclosedPorch\",\\n    am.\"3Ssn Porch\"                        AS \"3SsnPorch\",\\n    am.\"Screen Porch\"                      AS \"ScreenPorch\",\\n    am.\"fence\"                             AS \"Fence\",\\n\\n    -- Datos de venta (ya agregados por PID)\\n    EXTRACT(MONTH FROM sp.\"Sale Date\")     AS \"MoSold\",\\n    EXTRACT(YEAR  FROM sp.\"Sale Date\")     AS \"YrSold\",\\n    sp.\"Sale Type\"                         AS \"SaleType\",\\n    sp.\"Sale Condition\"                    AS \"SaleCondition\",\\n    sp.\"saleprice\"                         AS \"SalePrice\"\\n\\nFROM public.\"amesdbtemp\" am\\n\\n-- Agregados por PID desde floordetail (convertidos explícitamente a INTEGER)\\nLEFT JOIN (\\n    SELECT\\n        \"pid\",\\n        CAST(SUM(\"Full Bath\") AS INTEGER) AS \"FullBath\",\\n        CAST(SUM(\"Half Bath\") AS INTEGER) AS \"HalfBath\",\\n        CAST(SUM(bedrooms)    AS INTEGER) AS \"Bedroom\"\\n    FROM public.\"floordetail\"\\n    GROUP BY \"pid\"\\n) fd\\n    ON am.\"pid\" = fd.\"pid\"\\n\\n-- Datos de venta agregados por PID\\nLEFT JOIN (\\n    SELECT\\n        \"pid\",\\n        MAX(\"Sale Date\")      AS \"Sale Date\",\\n        MAX(\"Sale Type\")      AS \"Sale Type\",\\n        MAX(\"Sale Condition\") AS \"Sale Condition\",\\n        MAX(saleprice)        AS saleprice\\n    FROM public.\"saleproperty\"\\n    GROUP BY \"pid\"\\n) sp\\n    ON am.\"pid\" = sp.\"pid\"\\n\\n-- Zoning: amesdbtemp tiene un ID, mszoning devuelve el code\\nLEFT JOIN public.\"mszoning\" mz\\n    ON am.\"MS Zoning\" = mz.\"id\"\\n\\n-- Calidades (typequality) - se usa la misma tabla con distintos alias\\nLEFT JOIN public.\"typequality\" tq_exterqual\\n    ON am.\"Exter Qual\" = tq_exterqual.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_extercond\\n    ON am.\"Exter Cond\" = tq_extercond.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_heatingqc\\n    ON am.\"Heating QC\" = tq_heatingqc.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_kitchenqual\\n    ON am.\"Kitchen Qual\" = tq_kitchenqual.\"id\"',",
+				"     store: 'postgres',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> tabla1",
+				"source(output(",
+				"          PID as integer,",
+				"          {Lot Frontage} as integer,",
+				"          {Lot Area} as integer,",
+				"          Street as string,",
+				"          Alley as string,",
+				"          {Lot Shape} as string,",
+				"          {Land Contour} as string,",
+				"          Utilities as string,",
+				"          {Lot Config} as string,",
+				"          {Land Slope} as string,",
+				"          Neighborhood as string,",
+				"          {Condition 1} as string,",
+				"          {Condition 2} as string,",
+				"          {Bldg Type} as string,",
+				"          {House Style} as string,",
+				"          {Overall Qual} as integer,",
+				"          {Overall Cond} as integer,",
+				"          {Year Built} as integer,",
+				"          {Year Remod/Add} as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> traerAmes",
+				"source(output(",
+				"          PID as integer,",
+				"          BsmtQual as string,",
+				"          BsmtCond as string,",
+				"          BsmtExposure as string,",
+				"          BsmtFinType1 as string,",
+				"          BsmtFinSF1 as integer,",
+				"          BsmtFinType2 as string,",
+				"          BsmtFinSF2 as integer,",
+				"          BsmtUnfSF as integer,",
+				"          TotalBsmtSF as integer,",
+				"          BsmtFullBath as integer,",
+				"          BsmtHalfBath as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> traerBSMT",
+				"source(output(",
+				"          PID as integer,",
+				"          MiscFeature as string,",
+				"          MiscVal as short",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> traerMisc",
+				"source(output(",
+				"          PID as integer,",
+				"          GarageType as string,",
+				"          GarageYrBlt as short,",
+				"          GarageFinish as string,",
+				"          GarageCars as short,",
+				"          GarageArea as short,",
+				"          GarageQual as string,",
+				"          GarageCond as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> traerGarage",
+				"source(output(",
+				"          PID as integer,",
+				"          PoolArea as short,",
+				"          PoolQC as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> traerPool",
+				"tabla1 cast(output(",
+				"          FullBath as integer '000',",
+				"          HalfBath as integer '000',",
+				"          Bedroom as integer '000',",
+				"          MoSold as integer '000',",
+				"          YrSold as integer '000'",
+				"     ),",
+				"     errors: true) ~> cast1",
+				"traerAmes, changePIDToInteger join(traerAmes@PID == changePIDToInteger@PID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> UnirCSVconBD",
+				"cast1 derive(PID = toInteger(PID)) ~> changePIDToInteger",
+				"UnirCSVconBD select(skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> eliminarPIDDuplicado",
+				"eliminarPIDDuplicado, traerBSMT join(eliminarPIDDuplicado@PID == traerBSMT@PID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> UnirConBSTM",
+				"UnirConMisc select(skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> EliminateDuplicates",
+				"traerGarage cast(output(",
+				"          PID as integer '000'",
+				"     ),",
+				"     errors: true) ~> cast2",
+				"UnirConBSTM, traerGarage join(eliminarPIDDuplicado@PID == traerGarage@PID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> UnirConGaraje",
+				"UnirConGaraje, traerPool join(eliminarPIDDuplicado@PID == traerPool@PID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> UnirConPool",
+				"UnirConPool, traerMisc join(eliminarPIDDuplicado@PID == traerMisc@PID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> UnirConMisc",
+				"EliminateDuplicates derive(each(match(type=='string'), $$ = iif(     isNull($$) || $$ == '',     'NA',     $$ )),",
+				"          each(match(type=='integer'||type=='long'||type=='decimal'||type=='double'||type=='short'), $$ = iif(     isNull($$) || isNan($$),     0,     toInteger($$) ))) ~> ReplaceNullsAndNan",
+				"ReplaceNullsAndNan select(mapColumn(",
+				"          each(match(/* All input columns */true()),",
+				"               regexReplace($$,'[^A-Za-z0-9]','') = $$)",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> NormalizeColumns",
+				"NormalizeColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

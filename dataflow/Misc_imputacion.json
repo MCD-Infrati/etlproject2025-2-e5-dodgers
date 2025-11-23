@@ -1,0 +1,59 @@
+{
+	"name": "Misc_imputacion",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorageXX",
+						"type": "LinkedServiceReference"
+					},
+					"name": "miscImputacion"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "misc",
+						"type": "DatasetReference"
+					},
+					"name": "sinkImputacionMisc"
+				}
+			],
+			"transformations": [
+				{
+					"name": "imputacion"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          PID as integer,",
+				"          MiscFeature as string,",
+				"          MiscVal as integer",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'preliminarcontainer',",
+				"     folderPath: 'mongo_in',",
+				"     fileName: 'misc.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> miscImputacion",
+				"miscImputacion derive(each(match(type=='string'), $$ = iif(     isNull($$) || $$ == '',     'NA',     $$ )),",
+				"          each(match(type=='integer'||type=='long'||type=='decimal'||type=='double'), $$ = iif(     isNull($$) || isNan($$),     0,     $$ ))) ~> imputacion",
+				"imputacion sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkImputacionMisc"
+			]
+		}
+	}
+}

@@ -1,0 +1,25 @@
+{
+	"name": "misc",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDataLakeStorageXX",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "misc.csv",
+				"folderPath": "mongo_in",
+				"fileSystem": "preliminarcontainer"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
