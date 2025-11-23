@@ -10,6 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
+				"fileName": "resultado",
 				"container": "pipelineout"
 			},
 			"columnDelimiter": ",",

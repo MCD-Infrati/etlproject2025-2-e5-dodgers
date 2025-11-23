@@ -9,7 +9,7 @@
 						"referenceName": "NeonConn",
 						"type": "LinkedServiceReference"
 					},
-					"name": "tabla1"
+					"name": "NeonDB"
 				},
 				{
 					"dataset": {
@@ -53,12 +53,12 @@
 						"referenceName": "resultado",
 						"type": "DatasetReference"
 					},
-					"name": "sink1"
+					"name": "ExportarDatos"
 				}
 			],
 			"transformations": [
 				{
-					"name": "cast1"
+					"name": "CastToInteger"
 				},
 				{
 					"name": "UnirCSVconBD"
@@ -76,7 +76,7 @@
 					"name": "EliminateDuplicates"
 				},
 				{
-					"name": "cast2"
+					"name": "CastPIDtoInteger"
 				},
 				{
 					"name": "UnirConGaraje"
@@ -143,7 +143,7 @@
 				"     format: 'query',",
 				"     query: 'SELECT\\n    -- Identificador de la propiedad\\n    am.\"pid\"                               AS \"PID\",\\n\\n    -- Clases y zonificación\\n    am.\"MS SubClass\"                       AS \"MSSubClass\",\\n    mz.\"code\"                              AS \"MSZoning\",\\n\\n    -- Techo y exteriores\\n    am.\"Roof Style\"                        AS \"RoofStyle\",\\n    am.\"Roof Matl\"                         AS \"RoofMatl\",\\n    am.\"Exterior 1st\"                      AS \"Exterior1st\",\\n    am.\"Exterior 2nd\"                      AS \"Exterior2nd\",\\n    am.\"Mas Vnr Type\"                      AS \"MasVnrType\",\\n    am.\"Mas Vnr Area\"                      AS \"MasVnrArea\",\\n\\n    -- Calidades/condiciones normalizadas\\n    tq_exterqual.\"code\"                    AS \"ExterQual\",\\n    tq_extercond.\"code\"                    AS \"ExterCond\",\\n\\n    -- Fundación y heating\\n    am.\"foundation\"                        AS \"Foundation\",\\n    am.\"heating\"                           AS \"Heating\",\\n    tq_heatingqc.\"code\"                    AS \"HeatingQC\",\\n\\n    -- Otros servicios\\n    am.\"Central Air\"                       AS \"CentralAir\",\\n    am.\"electrical\"                        AS \"Electrical\",\\n\\n    -- Áreas de piso\\n    am.\"1st Flr SF\"                        AS \"1stFlrSF\",\\n    am.\"2nd Flr SF\"                        AS \"2ndFlrSF\",\\n    am.\"Low Qual Fin SF\"                   AS \"LowQualFinSF\",\\n\\n    -- Área habitable total (suma de 3 campos)\\n    COALESCE(am.\"1st Flr SF\", 0)\\n      + COALESCE(am.\"2nd Flr SF\", 0)\\n      + COALESCE(am.\"Low Qual Fin SF\", 0)  AS \"GrLivArea\",\\n\\n    -- Agregados por PID desde floordetail (enteros)\\n    COALESCE(fd.\"FullBath\", 0)             AS \"FullBath\",\\n    COALESCE(fd.\"HalfBath\", 0)             AS \"HalfBath\",\\n    COALESCE(fd.\"Bedroom\", 0)              AS \"Bedroom\",\\n\\n    -- Cocina\\n    am.\"Kitchen AbvGr\"                     AS \"Kitchen\",\\n    tq_kitchenqual.\"code\"                  AS \"KitchenQual\",\\n\\n    -- Habitaciones sobre grado\\n    am.\"TotRms AbvGrd\"                     AS \"TotRmsAbvGrd\",\\n    am.\"functional\"                        AS \"Functional\",\\n\\n    -- Chimeneas\\n    am.\"fireplaces\"                        AS \"Fireplaces\",\\n    am.\"Fireplace Qu\"                      AS \"FireplaceQu\",\\n\\n    -- Exterior / amenidades\\n    am.\"Paved Drive\"                       AS \"PavedDrive\",\\n    am.\"Wood Deck SF\"                      AS \"WoodDeckSF\",\\n    am.\"Open Porch SF\"                     AS \"OpenPorchSF\",\\n    am.\"Enclosed Porch\"                    AS \"EnclosedPorch\",\\n    am.\"3Ssn Porch\"                        AS \"3SsnPorch\",\\n    am.\"Screen Porch\"                      AS \"ScreenPorch\",\\n    am.\"fence\"                             AS \"Fence\",\\n\\n    -- Datos de venta (ya agregados por PID)\\n    EXTRACT(MONTH FROM sp.\"Sale Date\")     AS \"MoSold\",\\n    EXTRACT(YEAR  FROM sp.\"Sale Date\")     AS \"YrSold\",\\n    sp.\"Sale Type\"                         AS \"SaleType\",\\n    sp.\"Sale Condition\"                    AS \"SaleCondition\",\\n    sp.\"saleprice\"                         AS \"SalePrice\"\\n\\nFROM public.\"amesdbtemp\" am\\n\\n-- Agregados por PID desde floordetail (convertidos explícitamente a INTEGER)\\nLEFT JOIN (\\n    SELECT\\n        \"pid\",\\n        CAST(SUM(\"Full Bath\") AS INTEGER) AS \"FullBath\",\\n        CAST(SUM(\"Half Bath\") AS INTEGER) AS \"HalfBath\",\\n        CAST(SUM(bedrooms)    AS INTEGER) AS \"Bedroom\"\\n    FROM public.\"floordetail\"\\n    GROUP BY \"pid\"\\n) fd\\n    ON am.\"pid\" = fd.\"pid\"\\n\\n-- Datos de venta agregados por PID\\nLEFT JOIN (\\n    SELECT\\n        \"pid\",\\n        MAX(\"Sale Date\")      AS \"Sale Date\",\\n        MAX(\"Sale Type\")      AS \"Sale Type\",\\n        MAX(\"Sale Condition\") AS \"Sale Condition\",\\n        MAX(saleprice)        AS saleprice\\n    FROM public.\"saleproperty\"\\n    GROUP BY \"pid\"\\n) sp\\n    ON am.\"pid\" = sp.\"pid\"\\n\\n-- Zoning: amesdbtemp tiene un ID, mszoning devuelve el code\\nLEFT JOIN public.\"mszoning\" mz\\n    ON am.\"MS Zoning\" = mz.\"id\"\\n\\n-- Calidades (typequality) - se usa la misma tabla con distintos alias\\nLEFT JOIN public.\"typequality\" tq_exterqual\\n    ON am.\"Exter Qual\" = tq_exterqual.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_extercond\\n    ON am.\"Exter Cond\" = tq_extercond.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_heatingqc\\n    ON am.\"Heating QC\" = tq_heatingqc.\"id\"\\n\\nLEFT JOIN public.\"typequality\" tq_kitchenqual\\n    ON am.\"Kitchen Qual\" = tq_kitchenqual.\"id\"',",
 				"     store: 'postgres',",
-				"     isolationLevel: 'READ_UNCOMMITTED') ~> tabla1",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> NeonDB",
 				"source(output(",
 				"          PID as integer,",
 				"          {Lot Frontage} as integer,",
@@ -214,20 +214,20 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false) ~> traerPool",
-				"tabla1 cast(output(",
+				"NeonDB cast(output(",
 				"          FullBath as integer '000',",
 				"          HalfBath as integer '000',",
 				"          Bedroom as integer '000',",
 				"          MoSold as integer '000',",
 				"          YrSold as integer '000'",
 				"     ),",
-				"     errors: true) ~> cast1",
+				"     errors: true) ~> CastToInteger",
 				"traerAmes, changePIDToInteger join(traerAmes@PID == changePIDToInteger@PID,",
 				"     joinType:'left',",
 				"     matchType:'exact',",
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> UnirCSVconBD",
-				"cast1 derive(PID = toInteger(PID)) ~> changePIDToInteger",
+				"CastToInteger derive(PID = toInteger(PID)) ~> changePIDToInteger",
 				"UnirCSVconBD select(skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> eliminarPIDDuplicado",
 				"eliminarPIDDuplicado, traerBSMT join(eliminarPIDDuplicado@PID == traerBSMT@PID,",
@@ -240,7 +240,7 @@
 				"traerGarage cast(output(",
 				"          PID as integer '000'",
 				"     ),",
-				"     errors: true) ~> cast2",
+				"     errors: true) ~> CastPIDtoInteger",
 				"UnirConBSTM, traerGarage join(eliminarPIDDuplicado@PID == traerGarage@PID,",
 				"     joinType:'left',",
 				"     matchType:'exact',",
@@ -267,7 +267,7 @@
 				"NormalizeColumns sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> sink1"
+				"     skipDuplicateMapOutputs: true) ~> ExportarDatos"
 			]
 		}
 	}
